@@ -3,7 +3,7 @@ from typing import *
 from datetime import datetime
 import os
 
-from affect.config import LOGGING, LOGGING_PID, LOGGING_CONSOLE, LOGGING_FILE_PATH
+from affect.config import LOGGER_LOGGING, LOGGER_LOGGING_PID, LOGGER_LOGGING_CONSOLE, LOGGER_LOGGING_FILE_PATH
 
 
 class Logger:
@@ -20,19 +20,19 @@ class Logger:
 
 	@staticmethod
 	def print(*args, color: Union[str, None] = None, prefix: Union[str, None] = None, **kwargs):
-		if not LOGGING:
+		if not LOGGER_LOGGING:
 			return
 		if color is None:
 			color = Logger.Colors.ENDC
 		if prefix is None:
 			prefix = ""
 		prefix = f"[{datetime.now()}] {prefix}"
-		if LOGGING_PID:
+		if LOGGER_LOGGING_PID:
 			prefix = f"PID:{os.getpid()} {prefix}"
-		if not LOGGING_CONSOLE:
-			kwargs["file"] = open(LOGGING_FILE_PATH, "a")
+		if not LOGGER_LOGGING_CONSOLE:
+			kwargs["file"] = open(LOGGER_LOGGING_FILE_PATH, "a")
 		print(color, prefix, *args, Logger.Colors.ENDC, **kwargs)
-		if not LOGGING_CONSOLE:
+		if not LOGGER_LOGGING_CONSOLE:
 			kwargs["file"].close()
 
 	@staticmethod

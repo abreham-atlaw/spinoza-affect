@@ -1,0 +1,79 @@
+import time
+import typing
+
+from apps.trading.models import RecursiveStraddleOrder, ExecutionOrder
+from apps.utils.affect_executor import ThreadAffectExecutor
+from lib.network.oanda.data.models import Order
+from lib.utils.logger import Logger
+
+
+class RecursiveStraddleExecutor(ThreadAffectExecutor):
+
+	def __init__(self, order: RecursiveStraddleOrder, sleep_time: float = 0.5):
+		super().__init__(order.account)
+		self.__order = order
+		self.__is_active = True
+		self.__sleep_time = sleep_time
+
+	def __get_active_orders(self) -> typing.List[Order]:
+		return self._trader.get_pending_orders()
+
+	@staticmethod
+	def __is_parallel_order(execution_order: ExecutionOrder, order: Order) -> bool:
+		action = ExecutionOrder.Action.BUY if order.units > 0 else ExecutionOrder.Action.SELL
+		return (execution_order.action == action) and (execution_order.type == order.type)
+
+	def __place_order(self, execution_order: ExecutionOrder):
+		return self._trader.trade(
+			instrument=execution_order.instrument,
+			action=execution_order.action,
+			margin=execution_order.margin,
+			stop_price=execution_order.price if execution_order.type == ExecutionOrder.Type.STOP else None,
+			limit_price=execution_order.price if execution_order.type == ExecutionOrder.Type.LIMIT else None,
+			stop_loss=execution_order.stop_loss,
+			take_profit=execution_order.take_profit
+		)
+
+	def __check_and_place_order(self, order: ExecutionOrder, active_orders: typing.List[Order]):
+		for active_order in active_orders:
+			if self.__is_parallel_order(order, active_order):
+				return
+		Logger.info(f"[{self.__class__.__name__}] Found unplaced order: {order}")
+		self.__place_order(order)
+
+	def __check_and_place_orders(self, orders: typing.List[ExecutionOrder] = None, active_orders: typing.List[Order] = None):
+		if active_orders is None:
+			active_orders = self.__get_active_orders()
+		if orders is None:
+			orders = [self.__order.long_order, self.__order.short_order]
+
+		for order in orders:
+			self.__check_and_place_order(order, active_orders)
+
+	def __place_initial_orders(self):
+		Logger.info(f"Placing initial orders...")
+		self.__check_and_place_orders()
+		Logger.success(f"Placed Initial Orders!")
+
+	def __check_equilibrium(self) -> bool:
+		active_trades = self._trader.get_open_trades()
+		active_orders = self._trader.get_pending_orders()
+
+		return (
+				(len(active_trades) == 0 and len(active_orders) == 2) or
+				(len(active_trades) == 1 and len(active_orders) == 1)
+		)
+
+	def __loop(self):
+		Logger.info(f"Starting loop...")
+		while self.__is_active:
+			if self.__check_equilibrium():
+				time.sleep(self.__sleep_time)
+				continue
+			Logger.info(f"[{self.__class__.__name__}]Equilibrium Disturbed. Reacting")
+			self.__check_and_place_orders()
+
+	def run(self):
+		self.__place_initial_orders()
+
+

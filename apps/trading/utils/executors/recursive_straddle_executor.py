@@ -2,7 +2,7 @@ import time
 import typing
 
 from apps.trading.models import RecursiveStraddleOrder, ExecutionOrder
-from apps.utils.affect_executor import ThreadAffectExecutor
+from utils.affect_executor import ThreadAffectExecutor
 from lib.network.oanda.data.models import Order, Trade
 from lib.utils.logger import Logger
 
@@ -12,8 +12,12 @@ class RecursiveStraddleExecutor(ThreadAffectExecutor):
 	def __init__(self, order: RecursiveStraddleOrder, sleep_time: float = 0.5):
 		super().__init__(order.account)
 		self.__order = order
-		self.__is_active = True
 		self.__sleep_time = sleep_time
+
+	@property
+	def __is_active(self) -> bool:
+		self.__order.refresh_from_db(fields=["is_active"])
+		return self.__order.is_active
 
 	def __get_active_orders(self) -> typing.List[Order]:
 		return self._trader.get_pending_orders()
@@ -49,12 +53,10 @@ class RecursiveStraddleExecutor(ThreadAffectExecutor):
 		Logger.info(f"[{self.__class__.__name__}] Found unplaced order: {order}")
 		self.__place_order(order)
 
-	def __check_and_place_orders(self, orders: typing.List[ExecutionOrder] = None, active_orders: typing.List[Order] = None):
-		if active_orders is None:
-			active_orders = self.__get_active_orders()
-			active_trades = self._trader.get_open_trades()
-		if orders is None:
-			orders = [self.__order.long_order, self.__order.short_order]
+	def __check_and_place_orders(self):
+		active_orders = self.__get_active_orders()
+		active_trades = self._trader.get_open_trades()
+		orders = [self.__order.long_order, self.__order.short_order]
 
 		for order in orders:
 			self.__check_and_place_order(order, active_orders, active_trades)
@@ -73,6 +75,10 @@ class RecursiveStraddleExecutor(ThreadAffectExecutor):
 				(len(active_trades) == 1 and len(active_orders) == 1)
 		)
 
+	def __close(self):
+		self._trader.close_all_trades()
+		self._trader.cancel_all_orders()
+
 	def __loop(self):
 		Logger.info(f"Starting loop...")
 		while self.__is_active:
@@ -81,6 +87,8 @@ class RecursiveStraddleExecutor(ThreadAffectExecutor):
 				continue
 			Logger.info(f"[{self.__class__.__name__}]Equilibrium Disturbed. Reacting")
 			self.__check_and_place_orders()
+		Logger.info(f"Received Close Signal. Exiting...")
+		self.__close()
 
 	def run(self):
 		self.__place_initial_orders()

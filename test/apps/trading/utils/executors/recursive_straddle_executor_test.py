@@ -39,8 +39,8 @@ class RecursiveStraddleExecutorTest(test.TransactionTestCase):
 		price = self.trader.get_price(instrument)
 		margin = 70
 
-		upper_bound = 2.50# * price
-		lower_bound = 2.0# * price
+		upper_bound = 1.0002  * price
+		lower_bound = 0.9998 * price
 
 		Logger.info(f"UPPER_BOUND = {upper_bound}")
 		Logger.info(f"LOWER_BOUND = {lower_bound}")
@@ -70,7 +70,7 @@ class RecursiveStraddleExecutorTest(test.TransactionTestCase):
 		executor = RecursiveStraddleExecutor(order)
 		executor.start()
 
-		y_lim = (1.0, 3.0)
+		y_lim = (price*0.99, price*1.01)
 		prices = []
 		times = []
 
@@ -105,7 +105,63 @@ class RecursiveStraddleExecutorTest(test.TransactionTestCase):
 				continue
 
 			Logger.warning(f"Equilibrium failed: Pausing 10 seconds")
-			time.sleep(10)
+			time.sleep(15)
+			active_orders = self.trader.get_pending_orders()
+			active_trades = self.trader.get_open_trades()
 			has_equilibrium = (len(active_orders) == 2 and len(active_trades) == 0) or \
 							  (len(active_orders) == 1 and len(active_trades) == 1)
 			self.assertTrue(has_equilibrium)
+
+	def test_close(self):
+		instrument = ("XAU", "USD")
+		price = self.trader.get_price(instrument)
+		margin = 70
+
+		upper_bound = 1.0001  * price
+		lower_bound = 0.9999  * price
+
+		Logger.info(f"UPPER_BOUND = {upper_bound}")
+		Logger.info(f"LOWER_BOUND = {lower_bound}")
+
+		order = RecursiveStraddleOrder.objects.create(
+			account=self.account,
+			long_order=ExecutionOrder.objects.create(
+				type=ExecutionOrder.Type.STOP,
+				action=ExecutionOrder.Action.BUY,
+				margin=margin,
+				price=upper_bound,
+				stop_loss=lower_bound,
+				base_currency=instrument[0],
+				quote_currency=instrument[1]
+			),
+			short_order=ExecutionOrder.objects.create(
+				type=ExecutionOrder.Type.STOP,
+				action=ExecutionOrder.Action.SELL,
+				margin=margin,
+				price=lower_bound,
+				stop_loss=upper_bound,
+				base_currency=instrument[0],
+				quote_currency=instrument[1]
+			),
+		)
+
+		executor = RecursiveStraddleExecutor(order)
+		executor.start()
+
+		time.sleep(15)
+
+		active_orders = self.trader.get_pending_orders()
+		active_trades = self.trader.get_open_trades()
+		has_equilibrium = (len(active_orders) == 2 and len(active_trades) == 0) or \
+						  (len(active_orders) == 1 and len(active_trades) == 1)
+
+		self.assertTrue(has_equilibrium)
+
+		order.is_active = False
+		order.save()
+		time.sleep(5)
+		active_orders = self.trader.get_pending_orders()
+		active_trades = self.trader.get_open_trades()
+		self.assertEqual(len(active_orders), 0)
+		self.assertEqual(len(active_trades), 0)
+		self.assertFalse(executor.is_alive())

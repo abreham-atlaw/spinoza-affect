@@ -9,4 +9,3 @@ class Account(models.Model):
 	account_id: str = models.CharField(max_length=256)
 	token: str = models.TextField()
 	url: str = models.CharField(max_length=512)
-	streaming_url: str = models.CharField(max_length=512)

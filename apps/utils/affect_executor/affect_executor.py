@@ -15,7 +15,6 @@ class AffectExecutor(ABC):
 	def __init_trader(account: Account) -> Trader:
 		return Trader(
 			trading_url=account.url,
-			streaming_url=account.streaming_url,
 			token=account.token,
 			account_no=account.account_id,
 		)

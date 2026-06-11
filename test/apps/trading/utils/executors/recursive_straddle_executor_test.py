@@ -1,6 +1,7 @@
 import time
 
-import pytz
+import matplotlib.pyplot as plt
+
 from django import test
 
 from apps.core.models import Account
@@ -26,7 +27,6 @@ class RecursiveStraddleExecutorTest(test.TransactionTestCase):
 			account_id=config.DEFAULT_OANDA_TRADING_ACCOUNT_ID,
 			token=config.DEFAULT_OANDA_TOKEN,
 			url=config.DEFAULT_OANDA_TRADING_URL,
-			streaming_url=config.DEFAULT_OANDA_STREAMING_URL
 		)
 
 	def tearDown(self):
@@ -39,8 +39,8 @@ class RecursiveStraddleExecutorTest(test.TransactionTestCase):
 		price = self.trader.get_price(instrument)
 		margin = 70
 
-		upper_bound = 1.1 * price
-		lower_bound = 0.9 * price
+		upper_bound = 2.50# * price
+		lower_bound = 2.0# * price
 
 		Logger.info(f"UPPER_BOUND = {upper_bound}")
 		Logger.info(f"LOWER_BOUND = {lower_bound}")
@@ -70,25 +70,41 @@ class RecursiveStraddleExecutorTest(test.TransactionTestCase):
 		executor = RecursiveStraddleExecutor(order)
 		executor.start()
 
-		time.sleep(20)
+		y_lim = (1.0, 3.0)
+		prices = []
+		times = []
 
 		while True:
-			Logger.info(f"Current Time: {self.trader.get_current_time(instrument)}, Current Price: {self.trader.get_price(instrument)}")
-			time.sleep(20)
-
 			active_orders = self.trader.get_pending_orders()
 			active_trades = self.trader.get_open_trades()
 
+			current_price = self.trader.get_price(instrument)
+			current_time = self.trader.get_current_time(instrument)
+
+			prices.append(current_price)
+			times.append(current_time)
+
+			plt.cla()
+			plt.grid()
+			plt.ylim(*y_lim)
+			plt.plot(times, prices)
+			plt.scatter([current_time], [current_price], color="red")
+			for b in [upper_bound, lower_bound]:
+				plt.axhline(y=b, color="green")
+			plt.pause(1)
 
 			Logger.info(f"Open Trades({len(active_trades)}): {active_trades}")
 			Logger.info(f"Active Orders({len(active_orders)}): {active_orders}")
+			Logger.info(f"Current Time: {current_time.isoformat()}, Current Price: {current_price}")
 
 			has_equilibrium = (len(active_orders) == 2 and len(active_trades) == 0) or \
 				(len(active_orders) == 1 and len(active_trades) == 1)
 
 			if has_equilibrium:
+				Logger.success(f"Equilibrium in check!")
 				continue
 
+			Logger.warning(f"Equilibrium failed: Pausing 10 seconds")
 			time.sleep(10)
 			has_equilibrium = (len(active_orders) == 2 and len(active_trades) == 0) or \
 							  (len(active_orders) == 1 and len(active_trades) == 1)

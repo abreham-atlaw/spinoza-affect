@@ -3,7 +3,7 @@ import typing
 
 from apps.trading.models import RecursiveStraddleOrder, ExecutionOrder
 from apps.utils.affect_executor import ThreadAffectExecutor
-from lib.network.oanda.data.models import Order
+from lib.network.oanda.data.models import Order, Trade
 from lib.utils.logger import Logger
 
 
@@ -23,6 +23,11 @@ class RecursiveStraddleExecutor(ThreadAffectExecutor):
 		action = ExecutionOrder.Action.BUY if order.units > 0 else ExecutionOrder.Action.SELL
 		return (execution_order.action == action) and (execution_order.type == order.type)
 
+	@staticmethod
+	def __is_parallel_to_trade(execution_order: ExecutionOrder, trade: Trade) -> bool:
+		action = ExecutionOrder.Action.BUY if trade.initialUnits > 0 else ExecutionOrder.Action.SELL
+		return execution_order.action == action
+
 	def __place_order(self, execution_order: ExecutionOrder):
 		return self._trader.trade(
 			instrument=execution_order.instrument,
@@ -34,9 +39,12 @@ class RecursiveStraddleExecutor(ThreadAffectExecutor):
 			take_profit=execution_order.take_profit
 		)
 
-	def __check_and_place_order(self, order: ExecutionOrder, active_orders: typing.List[Order]):
+	def __check_and_place_order(self, order: ExecutionOrder, active_orders: typing.List[Order], active_trades: typing.List[Trade]):
 		for active_order in active_orders:
 			if self.__is_parallel_order(order, active_order):
+				return
+		for active_trade in active_trades:
+			if self.__is_parallel_to_trade(order, active_trade):
 				return
 		Logger.info(f"[{self.__class__.__name__}] Found unplaced order: {order}")
 		self.__place_order(order)
@@ -44,11 +52,12 @@ class RecursiveStraddleExecutor(ThreadAffectExecutor):
 	def __check_and_place_orders(self, orders: typing.List[ExecutionOrder] = None, active_orders: typing.List[Order] = None):
 		if active_orders is None:
 			active_orders = self.__get_active_orders()
+			active_trades = self._trader.get_open_trades()
 		if orders is None:
 			orders = [self.__order.long_order, self.__order.short_order]
 
 		for order in orders:
-			self.__check_and_place_order(order, active_orders)
+			self.__check_and_place_order(order, active_orders, active_trades)
 
 	def __place_initial_orders(self):
 		Logger.info(f"Placing initial orders...")
@@ -56,8 +65,8 @@ class RecursiveStraddleExecutor(ThreadAffectExecutor):
 		Logger.success(f"Placed Initial Orders!")
 
 	def __check_equilibrium(self) -> bool:
-		active_trades = self._trader.get_open_trades()
 		active_orders = self._trader.get_pending_orders()
+		active_trades = self._trader.get_open_trades()
 
 		return (
 				(len(active_trades) == 0 and len(active_orders) == 2) or
@@ -75,5 +84,4 @@ class RecursiveStraddleExecutor(ThreadAffectExecutor):
 
 	def run(self):
 		self.__place_initial_orders()
-
-
+		self.__loop()

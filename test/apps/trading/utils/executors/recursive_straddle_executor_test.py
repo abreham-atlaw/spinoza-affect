@@ -37,7 +37,7 @@ class RecursiveStraddleExecutorTest(test.TransactionTestCase):
 
 		instrument = ("XAU", "USD")
 		price = self.trader.get_price(instrument)
-		margin = 70
+		units = 0.3
 
 		upper_bound = 1.0002  * price
 		lower_bound = 0.9998 * price
@@ -50,7 +50,7 @@ class RecursiveStraddleExecutorTest(test.TransactionTestCase):
 			long_order=ExecutionOrder.objects.create(
 				type=ExecutionOrder.Type.STOP,
 				action=ExecutionOrder.Action.BUY,
-				margin=margin,
+				units=units,
 				price=upper_bound,
 				stop_loss=lower_bound,
 				base_currency=instrument[0],
@@ -59,7 +59,7 @@ class RecursiveStraddleExecutorTest(test.TransactionTestCase):
 			short_order=ExecutionOrder.objects.create(
 				type=ExecutionOrder.Type.STOP,
 				action=ExecutionOrder.Action.SELL,
-				margin=margin,
+				units=units,
 				price=lower_bound,
 				stop_loss=upper_bound,
 				base_currency=instrument[0],
@@ -115,7 +115,7 @@ class RecursiveStraddleExecutorTest(test.TransactionTestCase):
 	def test_close(self):
 		instrument = ("XAU", "USD")
 		price = self.trader.get_price(instrument)
-		margin = 70
+		units = 0.3
 
 		upper_bound = 1.0001  * price
 		lower_bound = 0.9999  * price
@@ -128,7 +128,7 @@ class RecursiveStraddleExecutorTest(test.TransactionTestCase):
 			long_order=ExecutionOrder.objects.create(
 				type=ExecutionOrder.Type.STOP,
 				action=ExecutionOrder.Action.BUY,
-				margin=margin,
+				units=units,
 				price=upper_bound,
 				stop_loss=lower_bound,
 				base_currency=instrument[0],
@@ -137,7 +137,7 @@ class RecursiveStraddleExecutorTest(test.TransactionTestCase):
 			short_order=ExecutionOrder.objects.create(
 				type=ExecutionOrder.Type.STOP,
 				action=ExecutionOrder.Action.SELL,
-				margin=margin,
+				units=units,
 				price=lower_bound,
 				stop_loss=upper_bound,
 				base_currency=instrument[0],

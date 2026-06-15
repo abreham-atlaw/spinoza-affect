@@ -36,7 +36,7 @@ class RecursiveStraddleExecutor(ThreadAffectExecutor):
 		return self._trader.trade(
 			instrument=execution_order.instrument,
 			action=execution_order.action,
-			margin=execution_order.margin,
+			units=execution_order.units,
 			stop_price=execution_order.price if execution_order.type == ExecutionOrder.Type.STOP else None,
 			limit_price=execution_order.price if execution_order.type == ExecutionOrder.Type.LIMIT else None,
 			stop_loss=execution_order.stop_loss,

@@ -8,4 +8,4 @@ class ExecutionOrderSerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = ExecutionOrder
-		fields = ("type", "action", "margin", "price", "stop_loss", "take_profit", "base_currency", "quote_currency")
+		fields = ("type", "action", "units", "price", "stop_loss", "take_profit", "base_currency", "quote_currency")

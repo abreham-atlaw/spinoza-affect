@@ -17,7 +17,7 @@ class ExecutionOrder(models.Model):
 
 	type: str = models.CharField(max_length=16, choices=[(t, t) for t in Type.ALL])
 	action: int = models.IntegerField(choices=[(a, a) for a in Action.ALL])
-	margin: float = models.FloatField()
+	units: float = models.FloatField()
 	price: float = models.FloatField()
 	stop_loss: float = models.FloatField(null=True, default=None)
 	take_profit: float = models.FloatField(null=True, default=None)

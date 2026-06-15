@@ -18,6 +18,8 @@ class Logger:
 		BOLD = '\033[1m'
 		UNDERLINE = '\033[4m'
 
+	__GLOBAL_LABEL = "Affect"
+
 	@staticmethod
 	def print(*args, color: Union[str, None] = None, prefix: Union[str, None] = None, **kwargs):
 		if not LOGGER_LOGGING:
@@ -26,7 +28,7 @@ class Logger:
 			color = Logger.Colors.ENDC
 		if prefix is None:
 			prefix = ""
-		prefix = f"[{datetime.now()}] {prefix}"
+		prefix = f"[{Logger.__GLOBAL_LABEL}][{datetime.now()}] {prefix}"
 		if LOGGER_LOGGING_PID:
 			prefix = f"PID:{os.getpid()} {prefix}"
 		if not LOGGER_LOGGING_CONSOLE:

@@ -6,6 +6,7 @@ import datetime
 import pytz
 import requests.exceptions
 
+from lib.utils.logger import Logger
 from .data.models import AccountSummary, Trade, Order, CloseTradeResponse, CreateOrderResponse, CandleStick, \
 	SpreadPrice, \
 	ClosedTradeDetails, TriggerPrice, CancelOrderResponse
@@ -16,7 +17,7 @@ from .requests import AccountSummaryRequest, GetOpenTradesRequest, GetInstrument
 	GetInstrumentsMarginRateRequest, GetAllOrdersRequest, StreamPriceRequest
 from .exceptions import InstrumentNotFoundException, InvalidActionException, InsufficientMarginException
 from lib.utils.cache.decorators import CacheDecorators
-from lib.utils.logger import Logger
+
 
 class Trader:
 
@@ -52,7 +53,7 @@ class Trader:
 	class TraderAction:
 		SELL = 0
 		BUY = 1
-		
+
 		@staticmethod
 		def reverse(action):
 			if action == Trader.TraderAction.BUY:
@@ -60,7 +61,7 @@ class Trader:
 			if action == Trader.TraderAction.SELL:
 				return Trader.TraderAction.BUY
 			raise InvalidActionException()
-	
+
 	def __init__(
 			self,
 			token: str,
@@ -115,7 +116,7 @@ class Trader:
 
 	def get_margin_rate(self) -> float:
 		return self.get_account_summary().marginRate
-	
+
 	def get_instruments(self) -> List[Tuple[str, str]]:
 		return self.__client.execute(GetInstrumentsRequest())
 
@@ -150,15 +151,16 @@ class Trader:
 		price: float = self.__client.execute(
 			GetPriceRequest(Trader.format_instrument(proper_instrument))
 		).get_price()
-		
+
 		if proper_instrument == instrument:
 			return price
-		return 1/price
+		return 1 / price
 
 	def __localize_datetime(self, dt: datetime.datetime) -> datetime.datetime:
 		return self.__timezone.localize(dt)
 
-	def __is_candle_complete(self, candle: CandleStick, granularity: int, current_time: datetime.datetime, hard_complete: bool) -> bool:
+	def __is_candle_complete(self, candle: CandleStick, granularity: int, current_time: datetime.datetime,
+							 hard_complete: bool) -> bool:
 		if candle.complete:
 			return True
 		if hard_complete or self.__candle_completion_threshold >= 1:
@@ -184,9 +186,13 @@ class Trader:
 					count=count
 				)
 			)
-		last_candlesticks = self.__recursive_fetch_candlestick(instrument, from_, to, granularity, self.__max_candlestick_count)
+		last_candlesticks = self.__recursive_fetch_candlestick(instrument, from_, to, granularity,
+															   self.__max_candlestick_count)
 
-		return self.__recursive_fetch_candlestick(instrument, from_, last_candlesticks[0].time, granularity, count - len(last_candlesticks)) + last_candlesticks
+		new_to = last_candlesticks[0].time
+
+		return self.__recursive_fetch_candlestick(instrument, from_, new_to, granularity,
+												  count - len(last_candlesticks)) + last_candlesticks
 
 	def fetch_candlestick(
 			self,
@@ -202,7 +208,7 @@ class Trader:
 			to = self.__localize_datetime(to)
 
 		return self.__recursive_fetch_candlestick(
-			instrument, from_, to, granularity, count+1 if count is not None else None
+			instrument, from_, to, granularity, count + 1 if count is not None else None
 		)
 
 	def get_candlestick(
@@ -225,7 +231,8 @@ class Trader:
 				filter_fn = lambda cd: cd.complete
 			else:
 				current_time = self.get_current_time(instrument, current_time=to)
-				filter_fn = lambda cd: self.__is_candle_complete(cd, self.__GRAN_MAP[granularity], current_time, hard_complete)
+				filter_fn = lambda cd: self.__is_candle_complete(cd, self.__GRAN_MAP[granularity], current_time,
+																 hard_complete)
 			candlesticks = list(filter(
 				filter_fn,
 				candlesticks
@@ -259,17 +266,17 @@ class Trader:
 		return self.get_instruments_margin_rate()[instrument]
 
 	def __get_margin_required(self, instrument: Tuple[str, str], units: int) -> float:
-		in_quote = self.get_price(instrument)*self.__get_margin_rate(instrument)*units
+		in_quote = self.get_price(instrument) * self.__get_margin_rate(instrument) * units
 		quote_price = self.get_price((instrument[1], self.__summary.currency))
 		return in_quote * quote_price
-	
-	def __get_units_for_margin_used(self, instrument: Tuple[str, str], margin_used: float) -> int:
+
+	def __get_units_for_margin_used(self, instrument: Tuple[str, str], margin_used: float) -> float:
 		in_quote = self.get_price((self.__summary.currency, instrument[1])) * margin_used
 		precision = self.get_trade_units_precision_map()[instrument]
 		price = self.get_price(instrument)
 		rate = self.__get_margin_rate(instrument)
 		units = in_quote / (rate * price)
-		return math.floor(units * 10**precision) / 10**precision
+		return math.floor(units * 10 ** precision) / 10 ** precision
 
 	def __format_price(self, price: float, instrument: typing.Tuple[str, str]) -> str:
 		return str(round(price, self.get_instrument_precision(instrument)))
@@ -279,7 +286,8 @@ class Trader:
 			self,
 			instrument: Tuple,
 			action: int,
-			margin: float,
+			margin: float = None,
+			units: float = None,
 			time_in_force=None,
 			stop_loss: float = None,
 			take_profit: float = None,
@@ -291,16 +299,25 @@ class Trader:
 		is_stop_order = stop_price is not None
 		is_trigger_order = is_limit_order or is_stop_order
 
+		if units is None and margin is None:
+			raise ValueError(f"Both units and margin can not be None.")
+
 		if time_in_force is None:
 			time_in_force = "GTC" if is_trigger_order else "FOK"
 
 		instrument, action = self.__get_proper_instrument_action_pair(instrument, action)
+
+		if margin is None:
+			margin = self.__get_margin_required(instrument, units)
+		if units is None:
+			units = self.__get_units_for_margin_used(instrument, margin)
+
 		available_margin = self.get_margin_available()
 		if (not is_trigger_order) and (available_margin < margin):
 			raise InsufficientMarginException(available_margin, margin)
 		units = self.__get_units(
 			action,
-			self.__get_units_for_margin_used(instrument, margin)
+			units
 		)
 
 		if take_profit is not None:
@@ -386,7 +403,7 @@ class Trader:
 	@staticmethod
 	def split_instrument(instrument: str) -> Tuple[str, str]:
 		return tuple(instrument.split(Trader.INSTRUMENT_DELIMITER))
-	
+
 	@staticmethod
 	def format_instrument(instrument: Tuple[str, str]) -> str:
 		return f"{instrument[0]}{Trader.INSTRUMENT_DELIMITER}{instrument[1]}"
@@ -395,7 +412,8 @@ class Trader:
 	def get_granularity_seconds(granularity: str) -> int:
 		return Trader.__GRAN_MAP[granularity]
 
-	def get_current_time(self, instrument: Tuple[str, str], current_time: datetime.datetime=None) -> datetime.datetime:
+	def get_current_time(self, instrument: Tuple[str, str],
+						 current_time: datetime.datetime = None) -> datetime.datetime:
 		if current_time is None:
 			current_time = datetime.datetime.now()
 		cs = self.get_candlestick(
@@ -409,10 +427,9 @@ class Trader:
 		increment = self.__GRAN_MAP[self.__min_gran]
 		if self.__time_correction:
 			increment *= 1.5
-		time =  cs[0].time.astimezone(self.__timezone) + datetime.timedelta(seconds=increment)
+		time = cs[0].time.astimezone(self.__timezone) + datetime.timedelta(seconds=increment)
 
 		return time
-
 
 	@CacheDecorators.cached_method()
 	def get_instrument_precision(self, instrument: typing.Tuple[str, str]) -> float:
@@ -432,5 +449,6 @@ class Trader:
 			GetInstrumentsMarginRateRequest()
 		)
 
-	def stream_price(self, instruments: typing.List[typing.Tuple[str, str]]) -> typing.Iterator[typing.Optional[SpreadPrice]]:
+	def stream_price(self, instruments: typing.List[typing.Tuple[str, str]]) -> typing.Iterator[
+		typing.Optional[SpreadPrice]]:
 		return self.__stream_client.execute(StreamPriceRequest(instruments=instruments))

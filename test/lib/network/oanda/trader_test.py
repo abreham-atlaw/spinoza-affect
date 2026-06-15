@@ -32,7 +32,7 @@ class TraderTest(unittest.TestCase):
 		order = self.trader.trade(
 			instrument,
 			Trader.TraderAction.BUY,
-			margin=70,
+			units=0.3,
 			stop_price=price*1.002
 		)
 

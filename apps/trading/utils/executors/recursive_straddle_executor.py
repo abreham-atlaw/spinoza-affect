@@ -50,7 +50,11 @@ class RecursiveStraddleExecutor(ThreadAffectExecutor):
 		for active_trade in active_trades:
 			if self.__is_parallel_to_trade(order, active_trade):
 				return
-		Logger.info(f"[{self.__class__.__name__}] Found unplaced order: {order}")
+		Logger.info(
+			f"[{self.__class__.__name__}] Found unplaced order: {order}. "
+			f"Active Orders: {[str(o) for o in active_orders]} "
+			f"Open Trades: {[str(o) for o in active_trades]}"
+		)
 		self.__place_order(order)
 
 	def __check_and_place_orders(self):

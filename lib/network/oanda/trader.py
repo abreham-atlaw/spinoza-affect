@@ -351,25 +351,32 @@ class Trader:
 		)
 		return response
 
-	@Logger.logged_method
-	def close_trades(self, instrument: Tuple[str, str]) -> List[CloseTradeResponse]:
+	def __close_trades(self, trades: typing.List[Trade]) -> List[CloseTradeResponse]:
 		closed_traders = []
 
-		for trade in self.get_open_trades():
-			if trade.get_instrument() == instrument or instrument[::-1] == trade.get_instrument():
-				try:
-					closed_traders.append(self.close_trade(trade.id))
-				except requests.exceptions.HTTPError as ex:
-					if ex.response is not None and ex.response.status_code != 404:
-						raise ex
-					Logger.warning(f"Trade(id={trade.id}) closed by another party.")
+		for trade in trades:
+			try:
+				closed_traders.append(self.close_trade(trade.id))
+			except requests.exceptions.HTTPError as ex:
+				if ex.response is not None and ex.response.status_code != 404:
+					raise ex
+				Logger.warning(f"Trade(id={trade.id}) closed by another party.")
 
 		return closed_traders
 
 	@Logger.logged_method
+	def close_trades(self, instrument: Tuple[str, str]) -> List[CloseTradeResponse]:
+		open_trades = [
+			trade
+			for trade in self.get_open_trades()
+			if trade.get_instrument() == instrument or instrument[::-1] == trade.get_instrument()
+		]
+		return self.__close_trades(open_trades)
+
+	@Logger.logged_method
 	def close_all_trades(self) -> List[CloseTradeResponse]:
 		open_trades = self.get_open_trades()
-		return [self.close_trade(trade.id) for trade in open_trades]
+		return self.__close_trades(open_trades)
 
 	@Logger.logged_method
 	def cancel_order(self, order_id: str) -> CancelOrderResponse:

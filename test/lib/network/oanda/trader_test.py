@@ -1,3 +1,4 @@
+import threading
 import time
 import unittest
 
@@ -38,3 +39,27 @@ class TraderTest(unittest.TestCase):
 
 		active_orders = self.trader.get_pending_orders()
 		self.assertEqual(len(active_orders), 1)
+
+	def test_close_trades_tolerance(self):
+
+		def async_close_trades():
+			time.sleep(2)
+			Logger.info(f"Async Closing all Trades")
+			for trade in trades:
+				self.trader.close_trade(trade.id)
+			Logger.success(f"Closed all trades")
+
+		[
+			self.trader.trade(
+				instrument=("XAU", "USD"),
+				action=Trader.TraderAction.BUY,
+				units=0.1,
+			)
+			for i in range(3)
+		]
+
+		trades = self.trader.get_open_trades()
+		threading.Thread(target=async_close_trades).start()
+
+		self.trader.close_all_trades()
+

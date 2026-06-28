@@ -54,7 +54,7 @@ class Logger:
 
 	@staticmethod
 	def info(*args: Any, **kwargs: Any):
-		Logger.print(*args, color=Logger.Colors.OKBLUE, **kwargs)
+		Logger.print(*args, color=Logger.Colors.OKCYAN, **kwargs)
 
 	@staticmethod
 	def warning(*args: Any, **kwargs: Any):

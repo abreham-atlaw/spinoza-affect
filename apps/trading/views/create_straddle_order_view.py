@@ -20,6 +20,7 @@ class CreateRecursiveStraddleOrderView(APIView):
 			account=Account.objects.create(**serializer.validated_data["account"]),
 			long_order=ExecutionOrder.objects.create(**serializer.validated_data["long_order"]),
 			short_order=ExecutionOrder.objects.create(**serializer.validated_data["short_order"]),
+			units_multiplier=serializer.validated_data["units_multiplier"]
 		)
 
 		executor = RecursiveStraddleExecutor(order=order)

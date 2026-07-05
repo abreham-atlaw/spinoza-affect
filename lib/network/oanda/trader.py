@@ -270,13 +270,16 @@ class Trader:
 		quote_price = self.get_price((instrument[1], self.__summary.currency))
 		return in_quote * quote_price
 
+	def __round_units(self, units: float, instrument: typing.Tuple[str, str]) -> float:
+		precision = self.get_trade_units_precision_map()[instrument]
+		return math.floor(units * 10 ** precision) / 10 ** precision
+
 	def __get_units_for_margin_used(self, instrument: Tuple[str, str], margin_used: float) -> float:
 		in_quote = self.get_price((self.__summary.currency, instrument[1])) * margin_used
-		precision = self.get_trade_units_precision_map()[instrument]
 		price = self.get_price(instrument)
 		rate = self.__get_margin_rate(instrument)
 		units = in_quote / (rate * price)
-		return math.floor(units * 10 ** precision) / 10 ** precision
+		return self.__round_units(units, instrument)
 
 	def __format_price(self, price: float, instrument: typing.Tuple[str, str]) -> str:
 		return str(round(price, self.get_instrument_precision(instrument)))
@@ -307,8 +310,12 @@ class Trader:
 
 		instrument, action = self.__get_proper_instrument_action_pair(instrument, action)
 
+		if units is not None:
+			units = self.__round_units(units, instrument)
+
 		if margin is None:
 			margin = self.__get_margin_required(instrument, units)
+
 		if units is None:
 			units = self.__get_units_for_margin_used(instrument, margin)
 

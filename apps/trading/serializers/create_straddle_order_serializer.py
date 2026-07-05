@@ -9,3 +9,4 @@ class CreateRecursiveStraddleOrderSerializer(serializers.Serializer):
 	account = AccountSerializer()
 	long_order = ExecutionOrderSerializer()
 	short_order = ExecutionOrderSerializer()
+	units_multiplier = serializers.FloatField(default=1.0)

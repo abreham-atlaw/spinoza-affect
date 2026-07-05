@@ -32,11 +32,21 @@ class RecursiveStraddleExecutor(ThreadAffectExecutor):
 		action = ExecutionOrder.Action.BUY if trade.initialUnits > 0 else ExecutionOrder.Action.SELL
 		return execution_order.action == action
 
+	def __get_units(self, execution_order: ExecutionOrder) -> float:
+		units = execution_order.units
+		if self.__order.recursions > 0:
+			units *= (self.__order.units_multiplier ** self.__order.recursions)
+			Logger.info(
+				f"[RecursiveStraddleExecutor] Incremented units to {units} due to {self.__order.recursions} recursions")
+		return units
+
 	def __place_order(self, execution_order: ExecutionOrder):
+		self.__order.increment_orders_placed()
+		units = self.__get_units(execution_order)
 		return self._trader.trade(
 			instrument=execution_order.instrument,
 			action=execution_order.action,
-			units=execution_order.units,
+			units=units,
 			stop_price=execution_order.price if execution_order.type == ExecutionOrder.Type.STOP else None,
 			limit_price=execution_order.price if execution_order.type == ExecutionOrder.Type.LIMIT else None,
 			stop_loss=execution_order.stop_loss,
@@ -95,5 +105,6 @@ class RecursiveStraddleExecutor(ThreadAffectExecutor):
 		self.__close()
 
 	def run(self):
+		Logger.info(f"Starting {self.__order}")
 		self.__place_initial_orders()
 		self.__loop()

@@ -13,4 +13,4 @@ class RecursiveStraddleOrderSerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = RecursiveStraddleOrder
-		fields = ("id", "account", "long_order", "short_order", "is_active")
+		fields = ("id", "account", "long_order", "short_order", "units_multiplier", "is_active")

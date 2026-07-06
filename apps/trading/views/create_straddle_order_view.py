@@ -17,10 +17,10 @@ class CreateRecursiveStraddleOrderView(APIView):
 		serializer.is_valid(raise_exception=True)
 
 		order: RecursiveStraddleOrder = RecursiveStraddleOrder.objects.create(
-			account=Account.objects.create(**serializer.validated_data["account"]),
-			long_order=ExecutionOrder.objects.create(**serializer.validated_data["long_order"]),
-			short_order=ExecutionOrder.objects.create(**serializer.validated_data["short_order"]),
-			units_multiplier=serializer.validated_data["units_multiplier"]
+			account=Account.objects.create(**serializer.validated_data.pop("account")),
+			long_order=ExecutionOrder.objects.create(**serializer.validated_data.pop("long_order")),
+			short_order=ExecutionOrder.objects.create(**serializer.validated_data.pop("short_order")),
+			**serializer.validated_data,
 		)
 
 		executor = RecursiveStraddleExecutor(order=order)

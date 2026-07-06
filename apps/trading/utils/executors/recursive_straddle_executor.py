@@ -36,8 +36,10 @@ class RecursiveStraddleExecutor(ThreadAffectExecutor):
 		units = execution_order.units
 		if self.__order.recursions > 0:
 			units *= (self.__order.units_multiplier ** self.__order.recursions)
+			if self.__order.max_units is not None:
+				units = min(units, self.__order.max_units)
 			Logger.info(
-				f"[RecursiveStraddleExecutor] Incremented units to {units} due to {self.__order.recursions} recursions")
+				f"[RecursiveStraddleExecutor] Incremented units to {units}(max: {self.__order.max_units}) due to {self.__order.recursions} recursions")
 		return units
 
 	def __place_order(self, execution_order: ExecutionOrder):

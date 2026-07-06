@@ -42,7 +42,7 @@ class RecursiveStraddleExecutorTest(test.TransactionTestCase):
 		upper_bound = 2.25  # 1.2  * price
 		lower_bound = 1.75  #0.8 * price
 
-		multiplier = 1.2
+		multiplier = 1.5
 
 		Logger.info(f"UPPER_BOUND = {upper_bound}")
 		Logger.info(f"LOWER_BOUND = {lower_bound}")
@@ -50,6 +50,7 @@ class RecursiveStraddleExecutorTest(test.TransactionTestCase):
 		order = RecursiveStraddleOrder.objects.create(
 			account=self.account,
 			units_multiplier=multiplier,
+			max_units=0.2,
 			long_order=ExecutionOrder.objects.create(
 				type=ExecutionOrder.Type.STOP,
 				action=ExecutionOrder.Action.BUY,

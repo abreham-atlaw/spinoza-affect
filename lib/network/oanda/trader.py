@@ -211,6 +211,17 @@ class Trader:
 			instrument, from_, to, granularity, count + 1 if count is not None else None
 		)
 
+	def is_candle_time_complete(
+			self,
+			candle: CandleStick,
+			instrument: typing.Tuple[str, str],
+			to: datetime.datetime,
+			granularity: str
+	) -> bool:
+		candle.time=self.__localize_datetime(candle.time)
+		current_time = self.get_current_time(instrument, to)
+		return self.__is_candle_complete(candle, self.__GRAN_MAP[granularity], current_time, False)
+
 	def get_candlestick(
 			self,
 			instrument: Tuple[str, str],

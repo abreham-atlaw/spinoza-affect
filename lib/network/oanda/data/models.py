@@ -105,6 +105,7 @@ class TradeClosed:
 
 @attr.define
 class OrderCreateTransaction:
+	id: str = attr.ib()
 	reason: str = attr.ib()
 	units: float = attr.ib()
 	type: str = attr.ib()

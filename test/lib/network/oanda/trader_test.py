@@ -4,6 +4,7 @@ import unittest
 
 from lib.network.oanda import Trader
 from affect import config
+from lib.network.oanda.data.models import Order, OrderCreateTransaction, CreateOrderResponse
 from lib.utils.logger import Logger
 
 
@@ -63,3 +64,24 @@ class TraderTest(unittest.TestCase):
 
 		self.trader.close_all_trades()
 
+	def test_get_order_by_id(self):
+		instrument = ("XAU", "USD")
+		price = self.trader.get_price(instrument) * 1.01
+
+		order = self.trader.trade(
+			instrument,
+			Trader.TraderAction.BUY,
+			units=0.3,
+			stop_price=price
+		)
+
+		self.assertIsInstance(order, CreateOrderResponse)
+		self.assertIsNotNone(order.orderCreateTransaction, OrderCreateTransaction)
+
+		order_id = order.orderCreateTransaction.id
+
+		Logger.info(f"Order Id: {order_id}")
+
+		fetched_order = self.trader.get_order_by_id(order_id)
+		self.assertIsInstance(fetched_order, Order)
+		self.assertEqual(order.orderCreateTransaction.id, fetched_order.id)

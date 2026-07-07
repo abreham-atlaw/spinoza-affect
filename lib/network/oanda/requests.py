@@ -66,6 +66,22 @@ class CreateOrderRequest(Request):
 		return response
 
 
+class GetOrderByIdRequest(Request):
+
+	def __init__(self, id: str):
+		super().__init__(
+			url="accounts/{{account_id}}/orders/{order_id}",
+			url_params={
+				"order_id": id
+			},
+			method=Request.Method.GET,
+			output_class=Order
+		)
+
+	def _filter_response(self, response):
+		return response["order"]
+
+
 class GetInstrumentsRequest(Request):
 
 	def __init__(self):

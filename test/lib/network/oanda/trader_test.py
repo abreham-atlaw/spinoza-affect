@@ -85,3 +85,22 @@ class TraderTest(unittest.TestCase):
 		fetched_order = self.trader.get_order_by_id(order_id)
 		self.assertIsInstance(fetched_order, Order)
 		self.assertEqual(order.orderCreateTransaction.id, fetched_order.id)
+
+	def test_get_trade_by_id(self):
+		instrument = ("XAU", "USD")
+		price = self.trader.get_price(instrument) * 0.9
+
+		order = self.trader.trade(
+			instrument,
+			Trader.TraderAction.BUY,
+			units=0.3,
+			stop_price=price
+		)
+		fetched_order = self.trader.get_order_by_id(order.orderCreateTransaction.id)
+		self.assertIsNotNone(fetched_order.tradeOpenedID)
+
+		trade_id = fetched_order.tradeOpenedID
+		Logger.info(f"Trade Id: {trade_id}")
+
+		trade = self.trader.get_trade_by_id(trade_id)
+		self.assertEqual(trade.id, trade_id)

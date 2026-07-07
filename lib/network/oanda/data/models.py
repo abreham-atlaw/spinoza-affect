@@ -28,39 +28,6 @@ class AccountSummary:
 
 
 @attr.define
-class Trade:
-
-	id: str = attr.ib()
-	instrument: str = attr.ib()
-	initialUnits: float = attr.ib()
-	initialMarginRequired: float = attr.ib()
-	realizedPL: float = attr.ib()
-	unrealizedPL: float = attr.ib()
-	marginUsed: float = attr.ib()
-	state: str = attr.ib()
-	price: float = attr.ib()
-	stopLossOrder: Optional[TriggerPrice] = attr.ib(default=None)
-	takeProfitOrder: Optional[TriggerPrice] = attr.ib(default=None)
-
-	def get_instrument(self) -> Tuple[str, str]:
-		from lib.network.oanda import Trader
-		return Trader.split_instrument(self.instrument)
-	
-	def get_action(self) -> int:
-		from lib.network.oanda import Trader
-		if self.initialUnits < 0:
-			return Trader.TraderAction.SELL
-		return Trader.TraderAction.BUY
-	
-	def get_units(self) -> int:
-		return abs(self.initialUnits)
-
-	def get_current_price(self) -> float:
-		return self.price + (self.unrealizedPL/self.initialUnits)
-		#return self.price
-
-
-@attr.define
 class Order:
 
 	class Types:
@@ -80,6 +47,8 @@ class Order:
 	createTime: typing.Optional[datetime.datetime] = attr.ib(default=None)
 	filledTime: typing.Optional[datetime.datetime] = attr.ib(default=None)
 	cancelledTime: typing.Optional[datetime.datetime] = attr.ib(default=None)
+	tradeOpenedID: typing.Optional[str] = attr.ib(default=None)
+	state: typing.Optional[str] = attr.ib(default=None)
 
 	def get_instrument(self) -> Tuple[str, str]:
 		from lib.network.oanda import Trader
@@ -88,6 +57,39 @@ class Order:
 	@property
 	def close_time(self) -> datetime.datetime:
 		return self.filledTime if self.filledTime is not None else self.cancelledTime
+
+
+@attr.define
+class Trade:
+
+	id: str = attr.ib()
+	instrument: str = attr.ib()
+	initialUnits: float = attr.ib()
+	initialMarginRequired: float = attr.ib()
+	realizedPL: float = attr.ib()
+	unrealizedPL: float = attr.ib()
+	marginUsed: float = attr.ib()
+	state: str = attr.ib()
+	price: float = attr.ib()
+	stopLossOrder: Optional[Order] = attr.ib(default=None)
+	takeProfitOrder: Optional[Order] = attr.ib(default=None)
+
+	def get_instrument(self) -> Tuple[str, str]:
+		from lib.network.oanda import Trader
+		return Trader.split_instrument(self.instrument)
+	
+	def get_action(self) -> int:
+		from lib.network.oanda import Trader
+		if self.initialUnits < 0:
+			return Trader.TraderAction.SELL
+		return Trader.TraderAction.BUY
+	
+	def get_units(self) -> int:
+		return abs(self.initialUnits)
+
+	def get_current_price(self) -> float:
+		return self.price + (self.unrealizedPL/self.initialUnits)
+		#return self.price
 
 @attr.define
 class TradeOpened:

@@ -14,7 +14,7 @@ from . import OandaNetworkClient
 from .requests import AccountSummaryRequest, GetOpenTradesRequest, GetInstrumentsRequest, CreateOrderRequest, \
 	CloseTradeRequest, GetPriceRequest, GetCandleSticksRequest, GetSpreadPriceRequest, GetClosedTradesRequest, \
 	GetInstrumentPrecisionRequest, GetTradeUnitsPrecisionMapRequest, GetPendingOrdersRequest, CancelOrderRequest, \
-	GetInstrumentsMarginRateRequest, GetAllOrdersRequest, StreamPriceRequest, GetOrderByIdRequest
+	GetInstrumentsMarginRateRequest, GetAllOrdersRequest, StreamPriceRequest, GetOrderByIdRequest, GetTradeByIdRequest
 from .exceptions import InstrumentNotFoundException, InvalidActionException, InsufficientMarginException
 from lib.utils.cache.decorators import CacheDecorators
 
@@ -116,6 +116,9 @@ class Trader:
 
 	def get_order_by_id(self, id: str) -> Order:
 		return self.__client.execute(GetOrderByIdRequest(id))
+
+	def get_trade_by_id(self, id: str) -> Trade:
+		return self.__client.execute(GetTradeByIdRequest(id))
 
 	def get_margin_rate(self) -> float:
 		return self.get_account_summary().marginRate

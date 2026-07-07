@@ -82,6 +82,22 @@ class GetOrderByIdRequest(Request):
 		return response["order"]
 
 
+class GetTradeByIdRequest(Request):
+
+	def __init__(self, id: str):
+		super().__init__(
+			url="accounts/{{account_id}}/trades/{trade_id}",
+			url_params={
+				"trade_id": id
+			},
+			method=Request.Method.GET,
+			output_class=Trade
+		)
+
+	def _filter_response(self, response):
+		return response["trade"]
+
+
 class GetInstrumentsRequest(Request):
 
 	def __init__(self):

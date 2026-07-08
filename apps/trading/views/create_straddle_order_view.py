@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from apps.core.models import Account
 from apps.trading.models import RecursiveStraddleOrder, ExecutionOrder
 from apps.trading.serializers import CreateRecursiveStraddleOrderSerializer, RecursiveStraddleOrderSerializer
-from apps.trading.utils.executors import RecursiveStraddleExecutor
+from di import TradingProvider
 
 
 class CreateRecursiveStraddleOrderView(APIView):
@@ -23,7 +23,7 @@ class CreateRecursiveStraddleOrderView(APIView):
 			**serializer.validated_data,
 		)
 
-		executor = RecursiveStraddleExecutor(order=order)
+		executor = TradingProvider.provide_recursive_straddle_executor(order=order)
 		executor.start()
 
 		serializer = RecursiveStraddleOrderSerializer(instance=order)

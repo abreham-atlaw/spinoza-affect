@@ -23,10 +23,12 @@ class RecursiveStraddleOrder(models.Model):
 		return self.orders_placed - 2
 
 	def increment_orders_placed(self):
+		self.refresh_from_db()
 		self.orders_placed += 1
 		self.save()
 
 	def deactivate(self):
+		self.refresh_from_db()
 		self.is_active = False
 		self.save()
 

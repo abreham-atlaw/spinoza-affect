@@ -35,6 +35,12 @@ class Order:
 		limit = "LIMIT"
 		stop = "STOP"
 
+	class State:
+		pending = "PENDING"
+		filled = "FILLED"
+		triggered = "TRIGGERED"
+		cancelled = "CANCELLED"
+
 	units: float = attr.ib()
 	instrument: str = attr.ib()
 	timeInForce: str = attr.ib()
@@ -60,19 +66,31 @@ class Order:
 
 
 @attr.define
+class TriggerOrder:
+
+	price: str = attr.ib()
+	state: str = attr.ib()
+
+
+@attr.define
 class Trade:
+
+	class State:
+		open = "OPEN"
+		closed = "CLOSED"
+		close_when_tradeable = "CLOSE_WHEN_TRADEABLE"
 
 	id: str = attr.ib()
 	instrument: str = attr.ib()
 	initialUnits: float = attr.ib()
 	initialMarginRequired: float = attr.ib()
 	realizedPL: float = attr.ib()
-	unrealizedPL: float = attr.ib()
-	marginUsed: float = attr.ib()
 	state: str = attr.ib()
 	price: float = attr.ib()
-	stopLossOrder: Optional[Order] = attr.ib(default=None)
-	takeProfitOrder: Optional[Order] = attr.ib(default=None)
+	stopLossOrder: Optional[TriggerOrder] = attr.ib(default=None)
+	takeProfitOrder: Optional[TriggerOrder] = attr.ib(default=None)
+	marginUsed: float = attr.ib(default=None)
+	unrealizedPL: float = attr.ib(default=None)
 
 	def get_instrument(self) -> Tuple[str, str]:
 		from lib.network.oanda import Trader

@@ -408,28 +408,31 @@ class Trader:
 			CancelOrderRequest(order_id)
 		)
 
-	@Logger.logged_method
-	def cancel_orders(self, instrument: Tuple[str, str]) -> List[CancelOrderResponse]:
+	def __cancel_orders(self, orders: typing.List[Order]):
 		closed_orders = []
 
-		for order in self.get_pending_orders():
-			if order.get_instrument() == instrument or instrument[::-1] == order.get_instrument():
-				try:
-					closed_orders.append(self.cancel_order(order.id))
-				except requests.exceptions.HTTPError as ex:
-					if ex.response is not None and ex.response.status_code != 404:
-						raise ex
-					Logger.warning(f"Order(id={order.id}) cancelled by another party.")
+		for order in orders:
+			try:
+				closed_orders.append(self.cancel_order(order.id))
+			except requests.exceptions.HTTPError as ex:
+				if ex.response is not None and ex.response.status_code != 404:
+					raise ex
+				Logger.warning(f"Order(id={order.id}) cancelled by another party.")
 
 		return closed_orders
 
 	@Logger.logged_method
+	def cancel_orders(self, instrument: Tuple[str, str]) -> List[CancelOrderResponse]:
+		orders = list(filter(
+			lambda order: order.get_instrument() == instrument or instrument[::-1] == order.get_instrument(),
+			self.get_pending_orders()
+		))
+		return self.__cancel_orders(orders)
+
+	@Logger.logged_method
 	def cancel_all_orders(self) -> List[CancelOrderResponse]:
 		orders = self.get_pending_orders()
-		return [
-			self.cancel_order(order.id)
-			for order in orders
-		]
+		return self.__cancel_orders(orders)
 
 	@staticmethod
 	def split_instrument(instrument: str) -> Tuple[str, str]:

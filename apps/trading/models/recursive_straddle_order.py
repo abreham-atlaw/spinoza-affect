@@ -26,6 +26,10 @@ class RecursiveStraddleOrder(models.Model):
 		self.orders_placed += 1
 		self.save()
 
+	def deactivate(self):
+		self.is_active = False
+		self.save()
+
 	def __str__(self):
 		field_values = [
 			f"{field.name}={getattr(self, field.name)}"

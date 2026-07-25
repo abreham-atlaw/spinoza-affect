@@ -36,7 +36,7 @@ class RecursiveStraddleExecutor2Test(unittest.TestCase):
 
 		instrument = ("XAU", "USD")
 		price = self.trader.get_price(instrument)
-		units = 0.1
+		units = 1.0
 
 
 		upper_bound = price * 1.2
@@ -52,7 +52,7 @@ class RecursiveStraddleExecutor2Test(unittest.TestCase):
 		order = RecursiveStraddleOrder.objects.create(
 			account=self.account,
 			units_multiplier=multiplier,
-			max_units=0.2,
+			max_units=3.0,
 			long_order=ExecutionOrder.objects.create(
 				type=ExecutionOrder.Type.STOP,
 				action=ExecutionOrder.Action.BUY,
@@ -75,7 +75,7 @@ class RecursiveStraddleExecutor2Test(unittest.TestCase):
 			),
 		)
 
-		executor = RecursiveStraddleExecutor2(order)
+		executor = RecursiveStraddleExecutor2(order, initial_units_correction=True)
 		executor.start()
 
 		y_lim = (lower_take_profit * 0.9999, upper_take_profit*1.0001)

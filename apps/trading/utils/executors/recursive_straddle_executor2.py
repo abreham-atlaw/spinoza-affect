@@ -15,11 +15,22 @@ class _State:
 
 class RecursiveStraddleExecutor2(ThreadAffectExecutor):
 
-	def __init__(self, order: RecursiveStraddleOrder, sleep_time: float = 0.5):
+	def __init__(
+			self,
+			order: RecursiveStraddleOrder,
+			sleep_time: float = 0.5,
+			initial_units_correction: bool = False
+	):
 		super().__init__(order.account)
 		self.__order = order
 		self.__sleep_time = sleep_time
 		self.__state = _State(None, None)
+		self.__initial_units_correction = initial_units_correction
+
+		Logger.info(
+			f"Initialized {self.__class__.__name__} with initial_units_correction={initial_units_correction}, "
+			f"sleep_time={sleep_time}, order: {str(order)}"
+		)
 
 	@property
 	def __is_active(self) -> bool:
@@ -71,6 +82,13 @@ class RecursiveStraddleExecutor2(ThreadAffectExecutor):
 			raise ValueError(f"Received order({str(order)}) with no tradeOpenedId.")
 		return self._trader.get_trade_by_id(order.tradeOpenedID)
 
+	def __correct_initial_units(self, triggered_order: Order, triggered_execution_order: ExecutionOrder):
+		Logger.info(f"Correcting initial units")
+		order, execution_order = (self.__state.short_order, self.__order.short_order) if triggered_execution_order == self.__order.long_order else \
+			(self.__state.long_order, self.__order.long_order)
+		self._trader.cancel_order(order.id)
+		self.__place_and_set_order(execution_order)
+
 	def __monitor_order(self, order: Order, execution_order: ExecutionOrder):
 
 		if order.state == Order.State.pending:
@@ -85,6 +103,12 @@ class RecursiveStraddleExecutor2(ThreadAffectExecutor):
 		trade = self.__get_order_trade(order)
 
 		if trade.state == Trade.State.open:
+			if (
+					self.__initial_units_correction and
+					(not self.__order.initial_units_corrected) and
+					self.__order.orders_placed == 2
+			):
+				self.__correct_initial_units(order, execution_order)
 			return
 
 		if trade.takeProfitOrder is not None and trade.takeProfitOrder.state in (Order.State.filled, Order.State.triggered):
@@ -98,8 +122,16 @@ class RecursiveStraddleExecutor2(ThreadAffectExecutor):
 
 	def __monitor_orders(self):
 		self.__refresh_state()
-		for order, execution_order in zip([self.__state.long_order, self.__state.short_order], [self.__order.long_order, self.__order.short_order]):
-			self.__monitor_order(order, execution_order)
+
+		self.__monitor_order(
+			self.__state.long_order,
+			self.__order.long_order
+		)
+
+		self.__monitor_order(
+			self.__state.short_order,
+			self.__order.short_order
+		)
 
 	def __tear_down(self):
 		Logger.warning(f"Tearing down...")

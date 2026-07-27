@@ -14,5 +14,8 @@ class TradingProvider:
 	def provide_recursive_straddle_executor(order: 'Order') -> 'RecursiveStraddleExecutor':
 		from apps.trading.utils.executors import RecursiveStraddleExecutor, RecursiveStraddleExecutor2
 		if config.USE_RECURSIVE_STRADDLE_EXECUTOR_2:
-			return RecursiveStraddleExecutor2(order)
+			return RecursiveStraddleExecutor2(
+				order,
+				initial_units_correction=config.ENABLE_INITIAL_UNITS_CORRECTION
+			)
 		return RecursiveStraddleExecutor(order)

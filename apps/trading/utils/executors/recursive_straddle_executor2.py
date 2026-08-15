@@ -52,6 +52,14 @@ class RecursiveStraddleExecutor2(ThreadAffectExecutor):
 			)
 		return units
 
+	def __has_reached_max_orders(self) -> bool:
+		if self.__order.max_orders is None:
+			return False
+		orders = self.__order.orders_placed
+		if self.__order.initial_units_corrected:
+			orders =  orders - 1
+		return orders >= self.__order.max_orders
+
 	def __place_order(self, execution_order: ExecutionOrder) -> Order:
 		self.__order.increment_orders_placed()
 		units = self.__get_units(execution_order)
@@ -88,6 +96,7 @@ class RecursiveStraddleExecutor2(ThreadAffectExecutor):
 			(self.__state.long_order, self.__order.long_order)
 		self._trader.cancel_order(order.id)
 		self.__place_and_set_order(execution_order)
+		self.__order.initial_units_corrected = True
 
 	def __monitor_order(self, order: Order, execution_order: ExecutionOrder):
 
@@ -114,6 +123,10 @@ class RecursiveStraddleExecutor2(ThreadAffectExecutor):
 		if trade.takeProfitOrder is not None and trade.takeProfitOrder.state in (Order.State.filled, Order.State.triggered):
 			Logger.success(f"Trade closed through take profit({trade.takeProfitOrder}). Closing {self.__order}.")
 			self.__order.deactivate()
+			return
+
+		if self.__has_reached_max_orders():
+			Logger.warning(f"Unable to place {execution_order} due to maximum number of orders({self.__order.max_orders}) reached.")
 			return
 
 		Logger.info(f"Order({order}) and it's trade({trade}) closed without a take profit. Place order {execution_order}.")

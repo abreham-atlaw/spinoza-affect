@@ -11,3 +11,4 @@ class CreateRecursiveStraddleOrderSerializer(serializers.Serializer):
 	short_order = ExecutionOrderSerializer()
 	units_multiplier = serializers.FloatField(default=1.0)
 	max_units = serializers.FloatField(default=None, allow_null=True)
+	max_orders = serializers.IntegerField(default=None, allow_null=True, required=False)

@@ -15,6 +15,7 @@ class RecursiveStraddleOrder(models.Model):
 	short_order: ExecutionOrder = models.ForeignKey(ExecutionOrder, on_delete=models.CASCADE, related_name="short_order")
 	units_multiplier: float = models.FloatField(default=1.0)
 	max_units: float = models.FloatField(null=True, default=None)
+	max_orders: int = models.IntegerField(null=True, default=None)
 	orders_placed: int = models.IntegerField(default=0.0)
 	initial_units_corrected = models.BooleanField(default=False)
 	is_active: bool = models.BooleanField(default=True)

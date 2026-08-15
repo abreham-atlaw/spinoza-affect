@@ -45,6 +45,7 @@ class RecursiveStraddleExecutor2Test(unittest.TestCase):
 		lower_take_profit = price * 0.4
 
 		multiplier = 1.2
+		max_orders = 3
 
 		Logger.info(f"UPPER_BOUND = {upper_bound}")
 		Logger.info(f"LOWER_BOUND = {lower_bound}")
@@ -53,13 +54,14 @@ class RecursiveStraddleExecutor2Test(unittest.TestCase):
 			account=self.account,
 			units_multiplier=multiplier,
 			max_units=3.0,
+			max_orders=max_orders,
 			long_order=ExecutionOrder.objects.create(
 				type=ExecutionOrder.Type.STOP,
 				action=ExecutionOrder.Action.BUY,
 				units=units,
 				price=upper_bound,
 				stop_loss=lower_bound,
-				take_profit=upper_take_profit,
+				take_profit=None,
 				base_currency=instrument[0],
 				quote_currency=instrument[1]
 			),
@@ -69,7 +71,7 @@ class RecursiveStraddleExecutor2Test(unittest.TestCase):
 				units=units,
 				price=lower_bound,
 				stop_loss=upper_bound,
-				take_profit=lower_take_profit,
+				take_profit=None,
 				base_currency=instrument[0],
 				quote_currency=instrument[1]
 			),

@@ -4,7 +4,7 @@ from affect import config
 
 if typing.TYPE_CHECKING:
 	from lib.network.oanda.data.models import Order
-	from apps.trading.utils.executors import RecursiveStraddleExecutor
+	from apps.trading.utils.executors import RecursiveStraddleExecutor, RecursiveMarketMakingExecutor
 
 
 class TradingProvider:
@@ -19,3 +19,8 @@ class TradingProvider:
 				initial_units_correction=config.ENABLE_INITIAL_UNITS_CORRECTION
 			)
 		return RecursiveStraddleExecutor(order)
+
+	@staticmethod
+	def provide_recursive_market_making_executor(order: 'Order') -> 'RecursiveMarketMakingExecutor':
+		from apps.trading.utils.executors import RecursiveMarketMakingExecutor
+		return RecursiveMarketMakingExecutor(order=order)

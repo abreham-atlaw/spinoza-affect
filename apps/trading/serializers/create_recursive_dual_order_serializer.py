@@ -4,7 +4,7 @@ from apps.core.serializers import AccountSerializer
 from .execution_order_serializer import ExecutionOrderSerializer
 
 
-class CreateRecursiveStraddleOrderSerializer(serializers.Serializer):
+class CreateRecursiveDualOrderSerializer(serializers.Serializer):
 
 	account = AccountSerializer()
 	long_order = ExecutionOrderSerializer()

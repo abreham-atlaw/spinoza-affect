@@ -44,8 +44,8 @@ class RecursiveStraddleExecutor2Test(unittest.TestCase):
 		upper_take_profit = price * 1.6
 		lower_take_profit = price * 0.4
 
-		multiplier = 1.2
-		max_orders = 3
+		multiplier = 1.0
+		max_orders = None
 
 		Logger.info(f"UPPER_BOUND = {upper_bound}")
 		Logger.info(f"LOWER_BOUND = {lower_bound}")

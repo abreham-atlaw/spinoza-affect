@@ -1,5 +1,5 @@
 from .recursive_dual_order import RecursiveDualOrder
 
 
-class RecursiveStraddleOrder(RecursiveDualOrder):
+class RecursiveMarketMakingOrder(RecursiveDualOrder):
 	pass

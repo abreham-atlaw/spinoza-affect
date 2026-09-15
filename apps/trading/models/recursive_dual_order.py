@@ -14,9 +14,16 @@ class RecursiveDualOrder(models.Model):
 
 	id: UUID = models.UUIDField(primary_key=True, default=uuid.uuid4)
 	account: Account = models.ForeignKey(Account, on_delete=models.CASCADE)
-	long_order: ExecutionOrder = models.ForeignKey(ExecutionOrder, on_delete=models.CASCADE, related_name="long_order")
-	short_order: ExecutionOrder = models.ForeignKey(ExecutionOrder, on_delete=models.CASCADE,
-													related_name="short_order")
+	long_order: ExecutionOrder = models.ForeignKey(
+		ExecutionOrder,
+		on_delete=models.CASCADE,
+		related_name="%(app_label)s_%(class)s_long_orders"
+	)
+	short_order: ExecutionOrder = models.ForeignKey(
+		ExecutionOrder,
+		on_delete=models.CASCADE,
+		related_name="%(app_label)s_%(class)s_short_orders"
+	)
 	units_multiplier: float = models.FloatField(default=1.0)
 	max_units: float = models.FloatField(null=True, default=None)
 	max_orders: int = models.IntegerField(null=True, default=None)

@@ -46,7 +46,8 @@ class RecursiveDualOrderAbstractExecutor(ThreadAffectExecutor, ABC):
 		if (
 				self.__initial_units_correction and
 				(not self._order.initial_units_corrected) and
-				self._order.orders_placed == 2
+				self._order.orders_placed == 2 and
+				self._order.units_multiplier != 1.0
 		):
 			self.__correct_initial_units(order, execution_order)
 

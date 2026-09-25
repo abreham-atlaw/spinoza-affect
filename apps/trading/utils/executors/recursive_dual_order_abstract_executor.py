@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import time
 
+import requests
+
 from apps.trading.models import ExecutionOrder, RecursiveDualOrder
 from lib.network.oanda.data.models import Order, Trade
 from lib.utils.logger import Logger
@@ -118,10 +120,18 @@ class RecursiveDualOrderAbstractExecutor(ThreadAffectExecutor, ABC):
 		return self._trader.get_trade_by_id(order.tradeOpenedID)
 
 	def __correct_initial_units(self, triggered_order: Order, triggered_execution_order: ExecutionOrder):
-		Logger.info(f"Correcting initial units")
+		Logger.info(f"[{self.__class__.__name__}] Correcting initial units")
 		order, execution_order = (self.__state.short_order, self._order.short_order) if triggered_execution_order == self._order.long_order else \
 			(self.__state.long_order, self._order.long_order)
-		self._trader.cancel_order(order.id)
+
+		try:
+			self._trader.cancel_order(order.id)
+		except requests.exceptions.HTTPError as ex:
+			if ex.response.status_code == 404:
+				Logger.warning(f"[{self.__class__.__name__}] Order({order}) closed upon attempt to correct initial units. Discontinuing attempt...")
+				return
+			raise ex
+
 		self._place_and_set_order(execution_order)
 		self._order.initial_units_corrected = True
 

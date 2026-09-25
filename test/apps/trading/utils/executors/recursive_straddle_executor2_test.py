@@ -39,12 +39,12 @@ class RecursiveStraddleExecutor2Test(unittest.TestCase):
 		units = 1.0
 
 
-		upper_bound = price * 1.2
-		lower_bound = price * 0.8
-		upper_take_profit = price * 1.6
-		lower_take_profit = price * 0.4
+		upper_bound = price * 1.0004
+		lower_bound = price * 0.9996
+		upper_take_profit = price * 1.0016
+		lower_take_profit = price * 0.9984
 
-		multiplier = 1.0
+		multiplier = 2.0
 		max_orders = None
 
 		Logger.info(f"UPPER_BOUND = {upper_bound}")
@@ -61,7 +61,7 @@ class RecursiveStraddleExecutor2Test(unittest.TestCase):
 				units=units,
 				price=upper_bound,
 				stop_loss=lower_bound,
-				take_profit=None,
+				take_profit=upper_take_profit,
 				base_currency=instrument[0],
 				quote_currency=instrument[1]
 			),
@@ -71,7 +71,7 @@ class RecursiveStraddleExecutor2Test(unittest.TestCase):
 				units=units,
 				price=lower_bound,
 				stop_loss=upper_bound,
-				take_profit=None,
+				take_profit=lower_take_profit,
 				base_currency=instrument[0],
 				quote_currency=instrument[1]
 			),

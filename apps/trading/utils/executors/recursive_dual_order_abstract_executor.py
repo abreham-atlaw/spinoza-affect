@@ -123,6 +123,7 @@ class RecursiveDualOrderAbstractExecutor(ThreadAffectExecutor, ABC):
 		Logger.info(f"[{self.__class__.__name__}] Correcting initial units")
 		order, execution_order = (self.__state.short_order, self._order.short_order) if triggered_execution_order == self._order.long_order else \
 			(self.__state.long_order, self._order.long_order)
+		assert (triggered_execution_order == self._order.short_order) or (triggered_execution_order == self._order.long_order)
 
 		try:
 			self._trader.cancel_order(order.id)
